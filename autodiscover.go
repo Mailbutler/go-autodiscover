@@ -3,7 +3,6 @@ package autodiscover
 import (
 	"bytes"
 	"crypto/tls"
-	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -21,12 +20,7 @@ type DiscoveredInfo struct {
 	ExchangeVersion string
 }
 
-func basicAuth(username, password string) string {
-	auth := username + ":" + password
-	return base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
-func redirectedUrl(emailAddress string) string {
+func redirectedUrl(emailAddress string, password string) string {
 	domain := strings.Split(emailAddress, "@")[1]
 
 	transport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
@@ -37,6 +31,8 @@ func redirectedUrl(emailAddress string) string {
 		return ""
 	}
 
+	req.SetBasicAuth(emailAddress, password)
+
 	resp, err := httpClient.Do(req)
 	if err != nil || resp.StatusCode != 302 {
 		return ""
@@ -45,13 +41,13 @@ func redirectedUrl(emailAddress string) string {
 	return resp.Header.Get("Location")
 }
 
-func discoveryUrls(emailAddress string) [3]string {
+func discoveryUrls(emailAddress string, password string) [3]string {
 	domain := strings.Split(emailAddress, "@")[1]
 
 	return [3]string{
 		fmt.Sprintf("https://%s/autodiscover/autodiscover.xml", domain),
 		fmt.Sprintf("https://autodiscover.%s/autodiscover/autodiscover.xml", domain),
-		redirectedUrl(emailAddress),
+		redirectedUrl(emailAddress, password),
 	}
 }
 
@@ -186,7 +182,7 @@ func Discover(emailAddress string, password string) (DiscoveredInfo, error) {
 		return DiscoveredInfo{}, err
 	}
 
-	for _, url := range discoveryUrls(emailAddress) {
+	for _, url := range discoveryUrls(emailAddress, password) {
 		if url == "" {
 			continue
 		}
@@ -197,7 +193,8 @@ func Discover(emailAddress string, password string) (DiscoveredInfo, error) {
 			continue
 		}
 
-		req.Header.Add("Authorization", "Basic "+basicAuth(emailAddress, password))
+		req.SetBasicAuth(emailAddress, password)
+
 		resp, err := httpClient.Do(req)
 		if err != nil {
 			log.WithError(err).Warn("failed to receive response from " + url)
