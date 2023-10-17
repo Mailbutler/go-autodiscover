@@ -24,9 +24,13 @@ func redirectedUrl(emailAddress string, password string) string {
 	domain := strings.Split(emailAddress, "@")[1]
 
 	transport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	httpClient := &http.Client{Transport: transport}
+	httpClient := &http.Client{
+		Transport: transport,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://autodiscover.%s/autodiscover/autodiscover.xml", domain), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("http://autodiscover.%s/autodiscover/autodiscover.xml", domain), nil)
 	if err != nil {
 		return ""
 	}

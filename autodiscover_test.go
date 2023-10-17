@@ -6,6 +6,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDiscover(t *testing.T) {
+	info, _ := Discover("testmailbutler@wp13554064.server-he.de", "geheim.MB44")
+
+	assert.Equal(t, "https://mail.hexchange.de/EWS/Exchange.asmx", info.EWSUrl)
+	assert.Equal(t, "Exchange2019", info.ExchangeVersion)
+}
+
 func TestTestExchangeVersion(t *testing.T) {
 	versionA, _ := exchangeVersion("738180DA")
 	assert.Equal(t, "Exchange2010_SP1", versionA)
