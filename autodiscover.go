@@ -44,6 +44,7 @@ func redirectedUrl(emailAddress string, password string) string {
 func discoveryUrls(emailAddress string, password string) [3]string {
 	domain := strings.Split(emailAddress, "@")[1]
 
+	// TODO: also add higher level domain(s)
 	return [3]string{
 		fmt.Sprintf("https://%s/autodiscover/autodiscover.xml", domain),
 		fmt.Sprintf("https://autodiscover.%s/autodiscover/autodiscover.xml", domain),
@@ -77,18 +78,7 @@ type AutoDiscoveryProtocol struct {
 	EwsUrl        string   `xml:"EwsUrl"`
 }
 
-func exchangeVersion(rawHex string) (string, error) {
-	i, err := strconv.ParseUint(rawHex, 16, 32)
-	if err != nil {
-		return "", err
-	}
-
-	binString := fmt.Sprintf("%032b", i)
-
-	major, _ := strconv.ParseInt(binString[4:10], 2, 32)
-	minor, _ := strconv.ParseInt(binString[10:16], 2, 32)
-	build, _ := strconv.ParseInt(binString[17:32], 2, 32)
-
+func ExchangeVersion(major int64, minor int64, build int64) (string, error) {
 	switch major {
 	case 8:
 		switch minor {
@@ -136,6 +126,21 @@ func exchangeVersion(rawHex string) (string, error) {
 	default:
 		return "", errors.New("unknown major version")
 	}
+}
+
+func exchangeVersion(rawHex string) (string, error) {
+	i, err := strconv.ParseUint(rawHex, 16, 32)
+	if err != nil {
+		return "", err
+	}
+
+	binString := fmt.Sprintf("%032b", i)
+
+	major, _ := strconv.ParseInt(binString[4:10], 2, 32)
+	minor, _ := strconv.ParseInt(binString[10:16], 2, 32)
+	build, _ := strconv.ParseInt(binString[17:32], 2, 32)
+
+	return ExchangeVersion(major, minor, build)
 }
 
 func parseResponse(body []byte) (DiscoveredInfo, error) {
