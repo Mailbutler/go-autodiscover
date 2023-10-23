@@ -183,6 +183,10 @@ func parseResponse(body []byte) (DiscoveredInfo, error) {
 }
 
 func Discover(emailAddress string, password string) (DiscoveredInfo, error) {
+	if !strings.Contains(emailAddress, "@") {
+		return DiscoveredInfo{}, errors.New("username must be an email address for auto-discovery")
+	}
+
 	transport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	httpClient := &http.Client{Transport: transport}
 
